@@ -153,7 +153,7 @@ class MLPClassifierDeep(nn.Module):
 class MLPClassifierDeepResidual(nn.Module):
     class Block(nn.Module):
         def __init__(self, in_channels, out_channels):
-            super.__init__()
+            super().__init__()
             layers = []
             layers.append(torch.nn.Linear(in_channels, out_channels))
             layers.append(torch.nn.LayerNorm(out_channels))
