@@ -7,6 +7,7 @@ but remember that the grader will assume the default constructor!
 """
 
 from pathlib import Path
+from turtle import forward, hideturtle
 
 import torch
 import torch.nn as nn
@@ -150,13 +151,29 @@ class MLPClassifierDeep(nn.Module):
 
 
 class MLPClassifierDeepResidual(nn.Module):
+    class Block(nn.Module):
+        def __init__(self, in_channels, out_channels):
+            super.__init__()
+            layers = []
+            layers.append(torch.nn.Linear(in_channels, out_channels))
+            layers.append(torch.nn.LayerNorm(out_channels))
+            layers.append(torch.nn.ReLU())
+            self.model = torch.nn.Sequential(*layers)
+            if in_channels != out_channels:
+                self.skip = torch.nn.Linear(in_channels, out_channels)
+            else:
+                self.skip = torch.nn.Identity()
+        
+        def forward(self, x: torch.Tensor):
+            return self.skip(x) + self.model(x)
+
     def __init__(
         self,
         h: int = 64,
         w: int = 64,
         num_classes: int = 6,
         hidden_dim: int = 128,
-        num_layers: int = 4
+        num_layers: int = 6
     ):
         """
         Args:
@@ -169,8 +186,16 @@ class MLPClassifierDeepResidual(nn.Module):
             num_layers: int, number of hidden layers
         """
         super().__init__()
+        c = 3
+        layers = []
+        layers.append(torch.nn.Flatten())
+        layers.append(self.Block(c * h * w, hidden_dim))
+        for i in range(num_layers - 1):
+             layers.append(self.Block(hidden_dim, hidden_dim))
 
-        raise NotImplementedError("MLPClassifierDeepResidual.__init__() is not implemented")
+        layers.append(torch.nn.Linear(hidden_dim, num_classes))
+
+        self.model = torch.nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -180,7 +205,7 @@ class MLPClassifierDeepResidual(nn.Module):
         Returns:
             tensor (b, num_classes) logits
         """
-        raise NotImplementedError("MLPClassifierDeepResidual.forward() is not implemented")
+        return self.model(x)
 
 
 model_factory = {
