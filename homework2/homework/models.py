@@ -131,7 +131,7 @@ class MLPClassifierDeep(nn.Module):
         for i in range(num_layers - 1):
             layers.append(torch.nn.Linear(hidden_dim, hidden_dim))
             layers.append(torch.nn.ReLU())
-            
+
         layers.append(torch.nn.Linear(hidden_dim, num_classes))
 
         self.model = torch.nn.Sequential(*layers)
@@ -144,7 +144,7 @@ class MLPClassifierDeep(nn.Module):
         Returns:
             tensor (b, num_classes) logits
         """
-        raise NotImplementedError("MLPClassifierDeep.forward() is not implemented")
+        return self.model(x)
 
 
 class MLPClassifierDeepResidual(nn.Module):
