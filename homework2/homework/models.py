@@ -67,6 +67,8 @@ class MLPClassifier(nn.Module):
         h: int = 64,
         w: int = 64,
         num_classes: int = 6,
+        hidden_dim: int = 200
+
     ):
         """
         An MLP with a single hidden layer
@@ -78,12 +80,11 @@ class MLPClassifier(nn.Module):
         """
         super().__init__()
         c = 3
-        hidden = 100
         layers = []
         layers.append(torch.nn.Flatten())
-        layers.append(torch.nn.Linear(c * h * w, hidden))
+        layers.append(torch.nn.Linear(c * h * w, hidden_dim))
         layers.append(torch.nn.ReLU())
-        layers.append(torch.nn.Linear(hidden, num_classes))
+        layers.append(torch.nn.Linear(hidden_dim, num_classes))
         self.model = torch.nn.Sequential(*layers)
 
         
