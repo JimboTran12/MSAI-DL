@@ -25,7 +25,7 @@ class ClassificationLoss(nn.Module):
         Returns:
             tensor, scalar loss
         """
-        loss = torch.nn.CrossEntropyLoss(logits, target)
+        loss = torch.nn.functional.cross_entropy(logits, target)
         return loss
 
 
