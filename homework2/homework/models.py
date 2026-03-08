@@ -78,7 +78,7 @@ class MLPClassifier(nn.Module):
         """
         super().__init__()
         c = 3
-        hidden = 500
+        hidden = 100
         layers = []
         layers.append(torch.nn.Flatten())
         layers.append(torch.nn.Linear(c * h * w, hidden))
