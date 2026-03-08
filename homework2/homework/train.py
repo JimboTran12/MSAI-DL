@@ -15,7 +15,7 @@ def train(
     model_name: str = "linear",
     num_epoch: int = 50,
     lr: float = 1e-2,
-    batch_size: int = 128,
+    batch_size: int = 32,
     seed: int = 2024,
     **kwargs,
 ):
