@@ -25,7 +25,8 @@ class ClassificationLoss(nn.Module):
         Returns:
             tensor, scalar loss
         """
-        return -torch.log(logits[torch.arange(logits.shape[0]), target]).mean()
+        loss = torch.nn.CrossEntropyLoss(logits, target)
+        return loss
 
 
 class LinearClassifier(nn.Module):
