@@ -43,8 +43,12 @@ class LinearClassifier(nn.Module):
             num_classes: int, number of classes
         """
         super().__init__()
-
-        raise NotImplementedError("LinearClassifier.__init__() is not implemented")
+        c = 3
+        layers = []
+        layers.append(torch.nn.Flatten())
+        layers.append(torch.nn.Linear(c * h * w, num_classes))
+        self.model = torch.nn.Sequential(*layers)
+        
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -54,7 +58,7 @@ class LinearClassifier(nn.Module):
         Returns:
             tensor (b, num_classes) logits
         """
-        raise NotImplementedError("LinearClassifier.forward() is not implemented")
+        return self.model(x)
 
 
 class MLPClassifier(nn.Module):
