@@ -126,10 +126,12 @@ class MLPClassifierDeep(nn.Module):
         c = 3
         layers = []
         layers.append(torch.nn.Flatten())
-        layers.append(torch.nn.Linear(c * h * w, hidden_dim))
+        layers.append(torch.nn.Linear(c * h * w, hidden_dim, bias = False))
+        layers.append(torch.nn.LayerNorm(hidden_dim))
         layers.append(torch.nn.ReLU())
         for i in range(num_layers - 1):
-            layers.append(torch.nn.Linear(hidden_dim, hidden_dim))
+            layers.append(torch.nn.Linear(hidden_dim, hidden_dim, bias = False))
+            layers.append(torch.nn.LayerNorm(hidden_dim))
             layers.append(torch.nn.ReLU())
 
         layers.append(torch.nn.Linear(hidden_dim, num_classes))
