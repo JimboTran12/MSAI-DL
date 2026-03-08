@@ -123,7 +123,18 @@ class MLPClassifierDeep(nn.Module):
         """
         super().__init__()
 
-        raise NotImplementedError("MLPClassifierDeep.__init__() is not implemented")
+        c = 3
+        layers = []
+        layers.append(torch.nn.Flatten())
+        layers.append(torch.nn.Linear(c * h * w, hidden_dim))
+        layers.append(torch.nn.ReLU())
+        for i in range(num_layers - 1):
+            layers.append(torch.nn.Linear(hidden_dim, hidden_dim))
+            layers.append(torch.nn.ReLU())
+            
+        layers.append(torch.nn.Linear(hidden_dim, num_classes))
+
+        self.model = torch.nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
