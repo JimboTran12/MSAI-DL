@@ -25,7 +25,7 @@ class ClassificationLoss(nn.Module):
         Returns:
             tensor, scalar loss
         """
-        raise NotImplementedError("ClassificationLoss.forward() is not implemented")
+        return -torch.log(logits[torch.arange(logits.shape[0]), target]).mean()
 
 
 class LinearClassifier(nn.Module):
