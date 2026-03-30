@@ -104,68 +104,44 @@ class Classifier(nn.Module):
         return self(x).argmax(dim=1)
 
 
-class _DownBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1),
-            nn.GroupNorm(1, out_channels),
-            nn.ReLU(inplace=True),
-        )
+class Detector(torch.nn.Module):
+    class Block(nn.Module):
+        def __init__(self, in_channels, out_channels, stride=1):
+            super().__init__()
+            self.conv = nn.Conv2d(in_channels, out_channels, kernel_size = 3, stride = stride, padding = 1)
+            self.relu = nn.ReLU()
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
-
-
-class _UpBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int):
-        super().__init__()
-        self.up = nn.ConvTranspose2d(
-            in_channels,
-            out_channels,
-            kernel_size=3,
-            stride=2,
-            padding=1,
-            output_padding=1,
-        )
-        self.norm = nn.GroupNorm(1, out_channels)
-        self.relu = nn.ReLU(inplace=True)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.up(x)
-        x = self.norm(x)
-        return self.relu(x)
-
-
-class Detector(nn.Module):
+        def forward(self, x):
+            return self.relu(self.conv(x))
+        
     def __init__(
         self,
         in_channels: int = 3,
         num_classes: int = 3,
-        base_channels: int = 16,
     ):
         """
-        A single model that performs segmentation and depth regression.
+        A single model that performs segmentation and depth regression
 
-        Shared encoder–decoder backbone (README), then two heads:
-        logits Head (B, num_classes, H, W) and depth head (B, 1, H, W) -> squeeze to (B, H, W).
+        Args:
+            in_channels: int, number of input channels
+            num_classes: int
         """
         super().__init__()
 
         self.register_buffer("input_mean", torch.as_tensor(INPUT_MEAN))
         self.register_buffer("input_std", torch.as_tensor(INPUT_STD))
 
-        c1 = base_channels
-        c2 = base_channels * 2
+        # Downsampling (encoder)
+        self.down1 = self.Block(in_channels, 16, stride=2)   # (B, 16, H/2, W/2)
+        self.down2 = self.Block(16, 32, stride=2)            # (B, 32, H/4, W/4)
 
-        self.down1 = _DownBlock(in_channels, c1)
-        self.down2 = _DownBlock(c1, c2)
-        self.up1 = _UpBlock(c2, c1)
-        self.up2 = _UpBlock(c1, c1)
+        # Upsampling (decoder)
+        self.up1 = nn.ConvTranspose2d(32, 16, kernel_size=2, stride=2)  # (B, 16, H/2, W/2)
+        self.up2 = nn.ConvTranspose2d(16, 16, kernel_size=2, stride=2)  # (B, 16, H, W)
 
-        self.feature_channels = c1
-        self.logits_head = nn.Conv2d(self.feature_channels, num_classes, kernel_size=1)
-        self.depth_head = nn.Conv2d(self.feature_channels, 1, kernel_size=1)
+        # Heads
+        self.seg_head = nn.Conv2d(16, num_classes, kernel_size=1)       # (B, 3, H, W)
+        self.depth_head = nn.Conv2d(16, 1, kernel_size=1)               # (B, 1, H, W)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -180,27 +156,17 @@ class Detector(nn.Module):
                 - logits (b, num_classes, h, w)
                 - depth (b, h, w)
         """
+        # optional: normalizes the input
         z = (x - self.input_mean[None, :, None, None]) / self.input_std[None, :, None, None]
 
-        h = self.down1(z)
-        h = self.down2(h)
-        h = self.up1(h)
-        h = self.up2(h)
-        h = self.down1(z)
-        h = self.down2(h)
-        h = self.up1(h)
-        h = self.up2(h)
-        h = self.down1(z)
-        h = self.down2(h)
-        h = self.up1(h)
-        h = self.up2(h)
-        
+        d1 = self.down1(z)  # (B, 16, H/2, W/2)
+        d2 = self.down2(d1) # (B, 32, H/4, W/4)
 
-        if h.shape[-2:] != x.shape[-2:]:
-            h = F.interpolate(h, size=x.shape[-2:], mode="bilinear", align_corners=False)
+        u1 = self.up1(d2)   # (B, 16, H/2, W/2)
+        u2 = self.up2(u1)   # (B, 16, H, W)
 
-        logits = self.logits_head(h)
-        raw_depth = self.depth_head(h).squeeze(1)
+        logits = self.seg_head(u2)                        # (B, 3, H, W)
+        raw_depth = self.depth_head(u2).squeeze(1)        # (B, H, W)
 
         return logits, raw_depth
 
@@ -220,8 +186,8 @@ class Detector(nn.Module):
         logits, raw_depth = self(x)
         pred = logits.argmax(dim=1)
 
-        # Optional additional post-processing for depth only if needed
-        depth = raw_depth
+        # Optional: Normalize depth to [0, 1] using sigmoid
+        depth = torch.sigmoid(raw_depth)
 
         return pred, depth
 
