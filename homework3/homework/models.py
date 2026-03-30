@@ -2,6 +2,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 HOMEWORK_DIR = Path(__file__).resolve().parent
 INPUT_MEAN = [0.2788, 0.2657, 0.2629]
@@ -103,26 +104,68 @@ class Classifier(nn.Module):
         return self(x).argmax(dim=1)
 
 
+class _DownBlock(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1),
+            nn.GroupNorm(1, out_channels),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+class _UpBlock(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int):
+        super().__init__()
+        self.up = nn.ConvTranspose2d(
+            in_channels,
+            out_channels,
+            kernel_size=3,
+            stride=2,
+            padding=1,
+            output_padding=1,
+        )
+        self.norm = nn.GroupNorm(1, out_channels)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.up(x)
+        x = self.norm(x)
+        return self.relu(x)
+
+
 class Detector(nn.Module):
     def __init__(
         self,
         in_channels: int = 3,
         num_classes: int = 3,
+        base_channels: int = 16,
     ):
         """
-        A single model that performs segmentation and depth regression
+        A single model that performs segmentation and depth regression.
 
-        Args:
-            in_channels: int, number of input channels
-            num_classes: int
+        Shared encoder–decoder backbone (README), then two heads:
+        logits Head (B, num_classes, H, W) and depth head (B, 1, H, W) -> squeeze to (B, H, W).
         """
         super().__init__()
 
         self.register_buffer("input_mean", torch.as_tensor(INPUT_MEAN))
         self.register_buffer("input_std", torch.as_tensor(INPUT_STD))
 
-        # TODO: implement
-        pass
+        c1 = base_channels
+        c2 = base_channels * 2
+
+        self.down1 = _DownBlock(in_channels, c1)
+        self.down2 = _DownBlock(c1, c2)
+        self.up1 = _UpBlock(c2, c1)
+        self.up2 = _UpBlock(c1, c1)
+
+        self.feature_channels = c1
+        self.logits_head = nn.Conv2d(self.feature_channels, num_classes, kernel_size=1)
+        self.depth_head = nn.Conv2d(self.feature_channels, 1, kernel_size=1)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -137,12 +180,18 @@ class Detector(nn.Module):
                 - logits (b, num_classes, h, w)
                 - depth (b, h, w)
         """
-        # optional: normalizes the input
         z = (x - self.input_mean[None, :, None, None]) / self.input_std[None, :, None, None]
 
-        # TODO: replace with actual forward pass
-        logits = torch.randn(x.size(0), 3, x.size(2), x.size(3))
-        raw_depth = torch.rand(x.size(0), x.size(2), x.size(3))
+        h = self.down1(z)
+        h = self.down2(h)
+        h = self.up1(h)
+        h = self.up2(h)
+
+        if h.shape[-2:] != x.shape[-2:]:
+            h = F.interpolate(h, size=x.shape[-2:], mode="bilinear", align_corners=False)
+
+        logits = self.logits_head(h)
+        raw_depth = self.depth_head(h).squeeze(1)
 
         return logits, raw_depth
 
