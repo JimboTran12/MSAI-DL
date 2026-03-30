@@ -11,10 +11,10 @@ INPUT_STD = [0.2064, 0.1944, 0.2252]
 class Classifier(nn.Module):
 
     class ClassifierBlock(nn.Module):
-        def __init__(self, in_channels, out_channels, stride):
+        def __init__(self, in_channels, out_channels, stride, dropout_p: float):
             super().__init__()
             kernel_size = 3
-            padding = (kernel_size-1)//2
+            padding = (kernel_size - 1) // 2
 
             self.c1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
             self.n1 = nn.GroupNorm(1, out_channels)
@@ -22,20 +22,27 @@ class Classifier(nn.Module):
             self.n2 = nn.GroupNorm(1, out_channels)
             self.relu1 = nn.ReLU()
             self.relu2 = nn.ReLU()
+            self.drop = nn.Dropout2d(dropout_p)
 
-            self.skip = nn.Conv2d(in_channels, out_channels, 1, stride, 0) if in_channels != out_channels else nn.Identity()
+            self.skip = (
+                nn.Conv2d(in_channels, out_channels, 1, stride, 0)
+                if in_channels != out_channels
+                else nn.Identity()
+            )
 
         def forward(self, x0):
             x = self.relu1(self.n1(self.c1(x0)))
             x = self.relu2(self.n2(self.c2(x)))
-            return self.skip(x0) + x
-            
+            x = self.skip(x0) + x
+            return self.drop(x)
+
     def __init__(
         self,
         in_channels: int = 3,
         num_classes: int = 6,
         num_blocks: int = 2,
-        channels_l0: int = 64
+        channels_l0: int = 64,
+        dropout: float = 0.2,
     ):
         """
         A convolutional network for image classification.
@@ -53,11 +60,12 @@ class Classifier(nn.Module):
         cnn_layers = [
             torch.nn.Conv2d(in_channels, channels_l0, kernel_size=11, stride=2, padding=5),
             torch.nn.ReLU(),
+            torch.nn.Dropout2d(dropout),
         ]
         c1 = channels_l0
         for _ in range(num_blocks):
             c2 = c1 * 2
-            cnn_layers.append(self.ClassifierBlock(c1, c2, stride=2))
+            cnn_layers.append(self.ClassifierBlock(c1, c2, stride=2, dropout_p=dropout))
             c1 = c2
         cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1))
         # Pool to one logit vector per image so output is (b, num_classes), not (b, c, h, w).
