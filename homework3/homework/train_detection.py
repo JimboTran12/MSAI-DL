@@ -25,7 +25,7 @@ def train(
 
     # load and augment data
     train_data = load_data("drive_data/train", return_dataloader=False)
-    train_data_aug = load_data("drive_data/train", transform_pipeline="aug", return_dataloader=False)
+    train_data_aug = load_data("drive_data/train", transform_pipeline="default", return_dataloader=False)
     train_data_full = torch.utils.data.ConcatDataset([train_data, train_data_aug])
 
     train_dataloader = torch.utils.data.DataLoader(train_data_full, batch_size=batch_size, shuffle=True, num_workers=2)
@@ -50,7 +50,7 @@ def train(
     seg_loss_func = torch.nn.CrossEntropyLoss(weight=seg_weights.to(device))
     depth_loss_func = torch.nn.MSELoss()
     # optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
 
     train_metric = DetectionMetric()
     val_metric = DetectionMetric()
