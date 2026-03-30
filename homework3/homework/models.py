@@ -186,6 +186,15 @@ class Detector(nn.Module):
         h = self.down2(h)
         h = self.up1(h)
         h = self.up2(h)
+        h = self.down1(z)
+        h = self.down2(h)
+        h = self.up1(h)
+        h = self.up2(h)
+        h = self.down1(z)
+        h = self.down2(h)
+        h = self.up1(h)
+        h = self.up2(h)
+        
 
         if h.shape[-2:] != x.shape[-2:]:
             h = F.interpolate(h, size=x.shape[-2:], mode="bilinear", align_corners=False)
