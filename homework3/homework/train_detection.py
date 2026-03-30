@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.utils.tensorboard as tb
 
-from .models import ClassificationLoss, load_model, save_model
+from .models import load_model, save_model
 from .datasets.classification_dataset import load_data as load_classification_dataset
 from .datasets.road_dataset import load_data as load_road_dataset
 from .metrics import ConfusionMatrix
@@ -56,7 +56,7 @@ def train(
 
 
     # Loss functions
-    loss_seg = ClassificationLoss()
+    loss_seg = torch.nn.CrossEntropyLoss()
     loss_depth = torch.nn.L1Loss()
 
     global_step = 0
