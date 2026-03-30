@@ -10,7 +10,7 @@ INPUT_STD = [0.2064, 0.1944, 0.2252]
 
 class Classifier(nn.Module):
 
-    class Block(torch.nn.Module):
+    class Block(nn.Module):
         def __init__(self, in_channels, out_channels, stride):
             super().__init__()
             kernel_size = 3
