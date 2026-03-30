@@ -8,32 +8,28 @@ INPUT_MEAN = [0.2788, 0.2657, 0.2629]
 INPUT_STD = [0.2064, 0.1944, 0.2252]
 
 
-class ClassifierBlock(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, stride):
-        super().__init__()
-        kernel_size = 3
-        padding = (kernel_size - 1) // 2
-
-        self.c1 = torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
-        self.n1 = torch.nn.GroupNorm(1, out_channels)
-        self.c2 = torch.nn.Conv2d(out_channels, out_channels, kernel_size, 1, padding)
-        self.n2 = torch.nn.GroupNorm(1, out_channels)
-        self.relu1 = torch.nn.ReLU()
-        self.relu2 = torch.nn.ReLU()
-
-        self.skip = (
-            torch.nn.Conv2d(in_channels, out_channels, 1, stride, 0)
-            if in_channels != out_channels
-            else torch.nn.Identity()
-        )
-
-    def forward(self, x0):
-        x = self.relu1(self.n1(self.c1(x0)))
-        x = self.relu2(self.n2(self.c2(x)))
-        return self.skip(x0) + x
-
-
 class Classifier(nn.Module):
+
+    class Block(torch.nn.Module):
+        def __init__(self, in_channels, out_channels, stride):
+            super().__init__()
+            kernel_size = 3
+            padding = (kernel_size-1)//2
+
+            self.c1 = torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
+            self.n1 = torch.nn.GroupNorm(1, out_channels)
+            self.c2 = torch.nn.Conv2d(out_channels, out_channels, kernel_size, 1, padding)
+            self.n2 = torch.nn.GroupNorm(1, out_channels)
+            self.relu1 = torch.nn.ReLU()
+            self.relu2 = torch.nn.ReLU()
+
+            self.skip = torch.nn.Conv2d(in_channels, out_channels, 1, stride, 0) if in_channels != out_channels else torch.nn.Identity()
+
+        def forward(self, x0):
+            x = self.relu1(self.n1(self.c1(x0)))
+            x = self.relu2(self.n2(self.c2(x)))
+            return self.skip(x0) + x
+            
     def __init__(
         self,
         in_channels: int = 3,
@@ -61,7 +57,7 @@ class Classifier(nn.Module):
         c1 = channels_l0
         for _ in range(num_blocks):
             c2 = c1 * 2
-            cnn_layers.append(ClassifierBlock(c1, c2, stride=2))
+            cnn_layers.append(self.Block(c1, c2, stride=2))
             c1 = c2
         cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1))
 
