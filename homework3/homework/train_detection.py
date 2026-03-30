@@ -24,9 +24,8 @@ def train(
     model.train()
 
     # load and augment data
-    train_data = load_data("drive_data/train", return_dataloader=False)
-    train_data_aug = load_data("drive_data/train", transform_pipeline="default", return_dataloader=False)
-    train_data_full = torch.utils.data.ConcatDataset([train_data, train_data_aug])
+    train_data = load_data("drive_data/train", transform_pipeline="aug", return_dataloader=False)
+    train_data_full = torch.utils.data.ConcatDataset([train_data, train_data])
 
     train_dataloader = torch.utils.data.DataLoader(train_data_full, batch_size=batch_size, shuffle=True, num_workers=2)
     val_dataloader = load_data("drive_data/val", shuffle=False)
