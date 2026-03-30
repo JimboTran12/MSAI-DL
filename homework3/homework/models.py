@@ -16,14 +16,14 @@ class Classifier(nn.Module):
             kernel_size = 3
             padding = (kernel_size-1)//2
 
-            self.c1 = torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
-            self.n1 = torch.nn.GroupNorm(1, out_channels)
-            self.c2 = torch.nn.Conv2d(out_channels, out_channels, kernel_size, 1, padding)
-            self.n2 = torch.nn.GroupNorm(1, out_channels)
-            self.relu1 = torch.nn.ReLU()
-            self.relu2 = torch.nn.ReLU()
+            self.c1 = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
+            self.n1 = nn.GroupNorm(1, out_channels)
+            self.c2 = nn.Conv2d(out_channels, out_channels, kernel_size, 1, padding)
+            self.n2 = nn.GroupNorm(1, out_channels)
+            self.relu1 = nn.ReLU()
+            self.relu2 = nn.ReLU()
 
-            self.skip = torch.nn.Conv2d(in_channels, out_channels, 1, stride, 0) if in_channels != out_channels else torch.nn.Identity()
+            self.skip = nn.Conv2d(in_channels, out_channels, 1, stride, 0) if in_channels != out_channels else nn.Identity()
 
         def forward(self, x0):
             x = self.relu1(self.n1(self.c1(x0)))
@@ -95,7 +95,7 @@ class Classifier(nn.Module):
         return self(x).argmax(dim=1)
 
 
-class Detector(torch.nn.Module):
+class Detector(nn.Module):
     def __init__(
         self,
         in_channels: int = 3,
@@ -170,7 +170,7 @@ def load_model(
     model_name: str,
     with_weights: bool = False,
     **model_kwargs,
-) -> torch.nn.Module:
+) -> nn.Module:
     """
     Called by the grader to load a pre-trained model by name
     """
@@ -196,7 +196,7 @@ def load_model(
     return m
 
 
-def save_model(model: torch.nn.Module) -> str:
+def save_model(model: nn.Module) -> str:
     """
     Use this function to save your model in train.py
     """
@@ -215,7 +215,7 @@ def save_model(model: torch.nn.Module) -> str:
     return output_path
 
 
-def calculate_model_size_mb(model: torch.nn.Module) -> float:
+def calculate_model_size_mb(model: nn.Module) -> float:
     """
     Args:
         model: torch.nn.Module
