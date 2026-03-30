@@ -116,19 +116,18 @@ def train(
             epoch_val = val_metric.compute()
             epoch_val_bg_pct = val_bg_count / val_total_count * 100.0 if val_total_count > 0 else 0.0
         
-        # print on first, last, every 10th epoch
-        if epoch == 0 or epoch == num_epoch - 1 or (epoch + 1) % 10 == 0:
-            print(
-                f"Epoch {epoch + 1:2d} / {num_epoch:2d}: "
-                f"iou={epoch_stats['iou']:.4f} "
-                f"accuracy={epoch_stats['accuracy']:.4f} "
-                # f"abs_depth_error={epoch_stats['abs_depth_error']:.4f} "
-                # f"tp_depth_error={epoch_stats['tp_depth_error']:.4f} "
-                f"bg%={epoch_bg_pct:.2f} "
-                f"val_iou={epoch_val['iou']:.4f} "
-                f"val_accuracy={epoch_val['accuracy']:.4f} "
-                f"val_bg%={epoch_val_bg_pct:.2f}"
-            )
+     
+        print(
+            f"Epoch {epoch + 1:2d} / {num_epoch:2d}: "
+            f"iou={epoch_stats['iou']:.4f} "
+            f"accuracy={epoch_stats['accuracy']:.4f} "
+            # f"abs_depth_error={epoch_stats['abs_depth_error']:.4f} "
+            # f"tp_depth_error={epoch_stats['tp_depth_error']:.4f} "
+            f"bg%={epoch_bg_pct:.2f} "
+            f"val_iou={epoch_val['iou']:.4f} "
+            f"val_accuracy={epoch_val['accuracy']:.4f} "
+            f"val_bg%={epoch_val_bg_pct:.2f}"
+        )
 
     save_model(model)
 
