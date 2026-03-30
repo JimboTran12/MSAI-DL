@@ -90,13 +90,11 @@ def train(
         logger.add_scalar("train_acc", epoch_train_acc, epoch)
         logger.add_scalar("val_acc", epoch_val_acc, epoch)
 
-        # print on first, last, every 10th epoch
-        if epoch == 0 or epoch == num_epoch - 1 or (epoch + 1) % 10 == 0:
-            print(
-                f"Epoch {epoch + 1:2d} / {num_epoch:2d}: "
-                f"train_acc={epoch_train_acc:.4f} "
-                f"val_acc={epoch_val_acc:.4f}"
-            )
+        print(
+            f"Epoch {epoch + 1:2d} / {num_epoch:2d}: "
+            f"train_acc={epoch_train_acc:.4f} "
+            f"val_acc={epoch_val_acc:.4f}"
+        )
 
     # save and overwrite the model in the root directory for grading
     save_model(model)
