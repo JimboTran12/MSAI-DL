@@ -60,6 +60,9 @@ class Classifier(nn.Module):
             cnn_layers.append(self.ClassifierBlock(c1, c2, stride=2))
             c1 = c2
         cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1))
+        # Pool to one logit vector per image so output is (b, num_classes), not (b, c, h, w).
+        cnn_layers.append(torch.nn.AdaptiveAvgPool2d(1))
+        cnn_layers.append(torch.nn.Flatten())
 
         self.network = torch.nn.Sequential(*cnn_layers)
 
@@ -75,10 +78,7 @@ class Classifier(nn.Module):
         z = (x - self.input_mean[None, :, None, None]) / self.input_std[None, :, None, None]
 
 
-        # TODO: replace with actual forward pass
-        logits = self.network(z)
-
-        return logits
+        return self.network(z)
 
     def predict(self, x: torch.Tensor) -> torch.Tensor:
         """
