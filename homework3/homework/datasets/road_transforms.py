@@ -153,8 +153,9 @@ class DepthLoader(ImageLoader):
 class RandomHorizontalFlip(tv_transforms.RandomHorizontalFlip):
     def __call__(self, sample: dict):
         if np.random.rand() < self.p:
-            sample["image"] = np.flip(sample["image"], axis=2)
-            sample["track"] = np.flip(sample["track"], axis=1)
+            # np.flip returns a view with negative strides; torch.as_tensor cannot collate that.
+            sample["image"] = np.ascontiguousarray(np.flip(sample["image"], axis=2))
+            sample["track"] = np.ascontiguousarray(np.flip(sample["track"], axis=1))
 
         return sample
 
