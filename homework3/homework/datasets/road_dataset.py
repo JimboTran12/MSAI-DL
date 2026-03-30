@@ -69,6 +69,12 @@ class RoadDataset(Dataset):
             if key.startswith("_"):
                 sample.pop(key)
 
+        # default_collate uses torch.as_tensor; numpy views (e.g. flip, transpose) can have
+        # negative strides which PyTorch rejects — force contiguous memory.
+        for k, v in list(sample.items()):
+            if isinstance(v, np.ndarray):
+                sample[k] = np.ascontiguousarray(v)
+
         return sample
 
 

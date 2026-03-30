@@ -135,7 +135,7 @@ class ImageLoader:
         image = np.uint8(Image.open(image_path)) / 255.0
         image = image.transpose(2, 0, 1)
 
-        sample["image"] = image.astype(np.float32)
+        sample["image"] = np.ascontiguousarray(image.astype(np.float32))
 
         return sample
 
@@ -145,7 +145,7 @@ class DepthLoader(ImageLoader):
         depth_path = self.episode_path / f"{sample['_idx']:05d}_depth.png"
         depth = np.uint16(Image.open(depth_path)) / 65535.0
 
-        sample["depth"] = depth.astype(np.float32)
+        sample["depth"] = np.ascontiguousarray(depth.astype(np.float32))
 
         return sample
 
@@ -188,7 +188,7 @@ class TrackProcessor:
         rasterize_lines(track_left, track, color=1)
         rasterize_lines(track_right, track, color=2)
 
-        sample["track"] = track.astype(np.int64)
+        sample["track"] = np.ascontiguousarray(track.astype(np.int64))
 
         return sample
 
