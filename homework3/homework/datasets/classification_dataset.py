@@ -68,7 +68,7 @@ class SuperTuxDataset(Dataset):
 
 def load_data(
     dataset_path: str,
-    transform_pipeline: str = "default",
+    transform_pipeline: str = "aug",
     return_dataloader: bool = True,
     num_workers: int = 2,
     batch_size: int = 128,
