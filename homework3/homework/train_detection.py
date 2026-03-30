@@ -15,7 +15,7 @@ def train(
     exp_dir: str = "logs",
     model_name: str = "detector",
     num_epoch: int = 30,
-    lr: float = 1e-3,
+    lr: float = 1e-2,
     batch_size: int = 32,
     seed: int = 2024,
     depth_loss_weight: float = 1.0,
