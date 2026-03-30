@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 import torch.utils.tensorboard as tb
 
+from .metrics import ConfusionMatrix
 from .models import load_model, save_model
 from .datasets.road_dataset import load_data
 
@@ -16,7 +17,7 @@ def train(
     model_name: str = "detector",
     num_epoch: int = 10,
     lr: float = 5e-2,
-    batch_size: int = 64,
+    batch_size: int = 128,
     seed: int = 2024,
     depth_loss_weight: float = 1.0,
     train_path: str = "drive_data/train",
@@ -43,6 +44,8 @@ def train(
 
     model = load_model(model_name, **kwargs)
     model = model.to(device)
+
+    num_classes = int(kwargs.get("num_classes", 3))
 
     train_data = load_data(
         train_path,
@@ -75,6 +78,7 @@ def train(
         train_seg_acc = []
         train_depth_mae = []
         train_losses = []
+        train_cm = ConfusionMatrix(num_classes=num_classes)
 
         for batch in train_data:
             img = batch["image"].to(device)
@@ -95,15 +99,19 @@ def train(
             train_losses.append(loss.item())
             train_seg_acc.append(seg_accuracy(logits.detach(), track))
             train_depth_mae.append(depth_mae(raw_depth.detach(), depth))
+            train_cm.add(logits.argmax(dim=1).detach(), track)
 
             logger.add_scalar("train/loss", loss.item(), global_step)
             logger.add_scalar("train/loss_seg", loss_seg.item(), global_step)
             logger.add_scalar("train/loss_depth", loss_depth.item(), global_step)
 
+        train_iou_metrics = train_cm.compute()
+
         with torch.inference_mode():
             model.eval()
             val_seg_acc = []
             val_depth_mae = []
+            val_cm = ConfusionMatrix(num_classes=num_classes)
 
             for batch in val_data:
                 img = batch["image"].to(device)
@@ -113,6 +121,9 @@ def train(
                 logits, raw_depth = model(img)
                 val_seg_acc.append(seg_accuracy(logits, track))
                 val_depth_mae.append(depth_mae(raw_depth, depth))
+                val_cm.add(logits.argmax(dim=1), track)
+
+            val_iou_metrics = val_cm.compute()
 
         epoch_train_loss = float(np.mean(train_losses))
         epoch_train_seg = float(np.mean(train_seg_acc))
@@ -123,15 +134,21 @@ def train(
         logger.add_scalar("epoch/train_loss", epoch_train_loss, epoch)
         logger.add_scalar("epoch/train_seg_acc", epoch_train_seg, epoch)
         logger.add_scalar("epoch/train_depth_mae", epoch_train_depth, epoch)
+        logger.add_scalar("epoch/train_mIoU", train_iou_metrics["iou"], epoch)
+        logger.add_scalar("epoch/train_cm_acc", train_iou_metrics["accuracy"], epoch)
         logger.add_scalar("epoch/val_seg_acc", epoch_val_seg, epoch)
         logger.add_scalar("epoch/val_depth_mae", epoch_val_depth, epoch)
+        logger.add_scalar("epoch/val_mIoU", val_iou_metrics["iou"], epoch)
+        logger.add_scalar("epoch/val_cm_acc", val_iou_metrics["accuracy"], epoch)
 
         print(
             f"Epoch {epoch + 1:2d} / {num_epoch:2d}: "
             f"train_loss={epoch_train_loss:.4f} "
             f"train_seg_acc={epoch_train_seg:.4f} "
+            f"train_mIoU={train_iou_metrics['iou']:.4f} "
             f"train_depth_mae={epoch_train_depth:.4f} | "
             f"val_seg_acc={epoch_val_seg:.4f} "
+            f"val_mIoU={val_iou_metrics['iou']:.4f} "
             f"val_depth_mae={epoch_val_depth:.4f}"
         )
 
