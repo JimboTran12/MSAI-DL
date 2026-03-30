@@ -6,8 +6,8 @@ import numpy as np
 import torch
 import torch.utils.tensorboard as tb
 
-from .models import ClassificationLoss, load_model, save_model
-from .utils import load_data
+from .models import load_model, save_model
+from .datasets.classification_dataset import load_data
 
 
 def train(
@@ -44,7 +44,7 @@ def train(
     val_data = load_data("classification_data/val", shuffle=False)
 
     # create loss function and optimizer
-    loss_func = ClassificationLoss()
+    loss_func = torch.nn.functional.cross_entropy
     # optimizer = ...
     optim = torch.optim.AdamW(model.parameters(), lr=lr)
 
