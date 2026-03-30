@@ -13,6 +13,8 @@ class Classifier(nn.Module):
         self,
         in_channels: int = 3,
         num_classes: int = 6,
+        num_blocks: int = 4,
+        channels_l0: int = 64
     ):
         """
         A convolutional network for image classification.
@@ -26,8 +28,39 @@ class Classifier(nn.Module):
         self.register_buffer("input_mean", torch.as_tensor(INPUT_MEAN))
         self.register_buffer("input_std", torch.as_tensor(INPUT_STD))
 
-        # TODO: implement
-        pass
+
+        class Block(torch.nn.Module):
+            def __init__(self, in_channels, out_channels, stride):
+                super().__init__()
+                kernel_size = 3
+                padding = (kernel_size-1)//2
+
+                self.c1 = torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
+                self.n1 = torch.nn.GroupNorm(1, out_channels)
+                self.c2 = torch.nn.Conv2d(out_channels, out_channels, kernel_size, 1, padding)
+                self.n2 = torch.nn.GroupNorm(1, out_channels)
+                self.relu1 = torch.nn.ReLU()
+                self.relu2 = torch.nn.ReLU()
+
+                self.skip = torch.nn.Conv2d(in_channels, out_channels, 1, stride, 0) if in_channels != out_channels else torch.nn.Identity()
+
+            def forward(self, x0):
+                x = self.relu1(self.n1(self.c1(x0)))
+                x = self.relu2(self.n2(self.c2(x)))
+                return self.skip(x0) + x
+
+        cnn_layers = [
+            torch.nn.Conv2d(in_channels, channels_l0, kernel_size=11, stride=2, padding=5),
+            torch.nn.ReLU(),
+        ]
+        c1 = channels_l0
+        for _ in range(num_blocks):
+            c2 = c1 * 2
+            cnn_layers.append(self.Block(c1, c2, stride=2))
+            c1 = c2
+        cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1))
+
+        self.network = torch.nn.Sequential(*cnn_layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -40,8 +73,9 @@ class Classifier(nn.Module):
         # optional: normalizes the input
         z = (x - self.input_mean[None, :, None, None]) / self.input_std[None, :, None, None]
 
+
         # TODO: replace with actual forward pass
-        logits = torch.randn(x.size(0), 6)
+        logits = self.network(z)
 
         return logits
 

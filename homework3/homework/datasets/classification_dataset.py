@@ -36,12 +36,14 @@ class SuperTuxDataset(Dataset):
             xform = transforms.ToTensor()
         elif transform_pipeline == "aug":
             # construct your custom augmentation
+            size = (64, 64)
             xform = transforms.Compose(
                 [
                     # TODO: fix
                     # transforms.ColorJitter(0.9, 0.9, 0.9, 0.1),
+                    transforms.RandomResizedCrop(size=size, antialias=True),
                     transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
+                    transforms.ToTensor()
                 ]
             )
 
