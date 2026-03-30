@@ -34,6 +34,9 @@ class ClassifierBlock(torch.nn.Module):
 
 
 class Classifier(nn.Module):
+    # Alias so `self.Block(...)` in __init__ resolves (same module as ClassifierBlock).
+    Block = ClassifierBlock
+
     def __init__(
         self,
         in_channels: int = 3,
@@ -61,7 +64,7 @@ class Classifier(nn.Module):
         c1 = channels_l0
         for _ in range(num_blocks):
             c2 = c1 * 2
-            cnn_layers.append(ClassifierBlock(c1, c2, stride=2))
+            cnn_layers.append(self.Block(c1, c2, stride=2))
             c1 = c2
         cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1))
 
