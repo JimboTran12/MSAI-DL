@@ -85,6 +85,8 @@ def load_data(
     num_workers: int = 2,
     batch_size: int = 32,
     shuffle: bool = False,
+    pin_memory: bool = False,
+    persistent_workers: bool = False,
 ) -> DataLoader | Dataset:
     """
     Constructs the dataset/dataloader.
@@ -122,4 +124,6 @@ def load_data(
         num_workers=num_workers,
         batch_size=batch_size,
         shuffle=shuffle,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers and num_workers > 0,
     )
