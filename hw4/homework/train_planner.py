@@ -19,6 +19,7 @@ def train(
     lr: float = 1e-3,
     batch_size: int = 32,
     seed: int = 2024,
+    transform_pipeline: str = "default",
     **kwargs,
 ):
     if torch.cuda.is_available():
@@ -42,8 +43,8 @@ def train(
     model = model.to(device)
     model.train()
 
-    train_data = load_data("drive_data/train", shuffle=True, batch_size=batch_size, num_workers=2)
-    val_data = load_data("drive_data/val", shuffle=False)
+    train_data = load_data("drive_data/train", shuffle=True, batch_size=batch_size, num_workers=2, transform_pipeline=transform_pipeline)
+    val_data = load_data("drive_data/val", shuffle=False, transform_pipeline=transform_pipeline)
 
     # create loss function and optimizer
     loss_func = torch.nn.L1Loss()
